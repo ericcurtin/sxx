@@ -7,6 +7,7 @@ cd "$DIR/.."
 
 if ! type d-run; then
   wget https://raw.githubusercontent.com/ericcurtin/staging/master/d-run
+  chmod u+x d-run
   export PATH=$PWD:$PATH
 fi
 
