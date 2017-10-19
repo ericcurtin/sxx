@@ -5,6 +5,11 @@ set -eu
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR/.."
 
+if ! type d-run; then
+  wget https://raw.githubusercontent.com/ericcurtin/staging/master/d-run
+  export PATH=$PWD:$PATH
+fi
+
 if [ "$(uname)" != "Linux" ]; then
   make -j3
   exit 0
