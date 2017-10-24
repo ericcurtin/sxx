@@ -11,17 +11,15 @@ if ! type d-run; then
   export PATH=$PWD:$PATH
 fi
 
-if [ "$(uname)" != "Linux" ]; then
-  make -j3
-  exit 0
-fi
-
 dockerfiles/docker.sh build
 
 for doc in $(dockerfiles/docker.sh list); do
   name=$(printf "$doc" | sed "s#curtine/##" | sed "s/:/-/")
   docker rm -f "$name" || true
   d-run "$name" "$doc"
+  docker exec -u "$UID" "$name" /bin/bash -c "cd $PWD &&\
+                                              find . -name '*.sh' |\
+                                              xargs shellcheck -e 2059"
   docker exec -u "$UID" "$name" /bin/bash -c "cd $PWD &&\
                                               rm -rf bin &&\
                                               mkdir bin &&\
