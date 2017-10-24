@@ -6,7 +6,7 @@ RUN zypper up -y &&\
                       cmake\
                       gcc-c++\
                       llvm-clang\
-                      Shellcheck &&\
+                      ShellCheck &&\
     zypper clean &&\
     rm -rf /tmp/* /var/tmp/*
 
