@@ -2,8 +2,8 @@
 
 ## Overview
 
-sxx is a tool that allows you to use a compiled language as a scripting
-language.
+sxx is a tool similar to ansible ad-hoc which uses existing ssh, scp, rsync,
+etc. syntax.
 
 ## Building
 
