@@ -5,14 +5,17 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <regex>
 
 using std::vector;
 using std::string;
 using std::ifstream;
 using std::cout;
 using std::cerr;
+using std::regex;
+using std::regex_match;
 
-vector<string> get_hosts(const string& hostGrp) {
+vector<string> get_hosts(const string& host_grp) {
   ifstream is("/etc/sxx/hosts");
   vector<string> hosts;
   for (string line; getline(is, line);) {
@@ -21,8 +24,8 @@ vector<string> get_hosts(const string& hostGrp) {
     }
 
     const size_t end = line.find(']');
-    const string curHostGrp = line.substr(1, end - 1);
-    if (curHostGrp != hostGrp) {
+    const string cur_host_grp = line.substr(1, end - 1);
+    if (regex_match(cur_host_grp, regex(host_grp))) {
       continue;
     }
 
@@ -119,8 +122,8 @@ int main(const int argc, const char* argv[]) {
 
     const size_t end = this_str.size();
 
-    const string hostGrp = this_str.substr(at_pos, end - at_pos);
-    const vector<string> hosts = get_hosts(hostGrp);
+    const string host_grp = this_str.substr(at_pos, end - at_pos);
+    const vector<string> hosts = get_hosts(host_grp);
     grpCmd(type.c_str(), user, hosts, *(++i));
     return 0;
   }

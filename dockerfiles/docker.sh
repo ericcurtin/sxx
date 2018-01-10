@@ -7,7 +7,9 @@ BASE="$(basename "$0")"
 
 cd "$DIR"
 
-if [ "$1" != "build" ] && [ "$1" != "pull" ] && [ "$1" != "push" ] && \
+if [ "$1" != "build" ] && \
+   [ "$1" != "pull" ] && \
+   [ "$1" != "push" ] && \
    [ "$1" != "list" ]; then
   echo -e "Usage: $BASE arg\n" \
           "arg should be build, pull, push or list"  >&2
