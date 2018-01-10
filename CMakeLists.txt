@@ -5,5 +5,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -Werror -Wall -Wextra -Wshadow -Wnon-virtual
 
 add_executable(${PROJECT_NAME} src/sxx.cpp)
 
+target_link_libraries(${PROJECT_NAME} PocoFoundation)
+
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 

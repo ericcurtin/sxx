@@ -6,6 +6,11 @@
 #include <iostream>
 #include <fstream>
 #include <regex>
+#include <fstream>
+
+#include <Poco/Process.h>
+#include <Poco/PipeStream.h>
+#include <Poco/StreamCopier.h>
 
 using std::vector;
 using std::string;
@@ -14,6 +19,10 @@ using std::cout;
 using std::cerr;
 using std::regex;
 using std::regex_match;
+
+using Poco::Pipe;
+using Poco::Process;
+using Poco::ProcessHandle;
 
 vector<string> get_hosts(const string& host_grp) {
   ifstream is("/etc/sxx/hosts");
@@ -43,54 +52,41 @@ vector<string> get_hosts(const string& host_grp) {
   return hosts;
 }
 
-enum PIPE_FILE_DESCRIPTERS { READ_FD = 0, WRITE_FD = 1 };
-
 struct proc {
-  string host_;
-  int pid_;
-  int c2p_[2];
+  const string host_;
+  Pipe out_pipe_;
+  const ProcessHandle proc_hand_;
 
-  proc(const string& host) : host_(host), pid_() {
-    if (pipe(c2p_) == -1) {
-      cerr << "err: pipe " << EXIT_FAILURE << '\n';
-    }
-    pid_ = fork();
-  }
+  proc(const string& host, const vector<string>& args)
+      : host_(host),
+        proc_hand_(Process::launch(args[0], args, 0, &out_pipe_, 0)) {}
 };
 
-void grpCmd(const char* type,
+void grpCmd(const string& type,
             const string& user,
             const vector<string>& hosts,
             const string& cmd) {
   vector<proc> procs;
   for (vector<string>::const_iterator i = hosts.begin(); i != hosts.end();
        ++i) {
-    const proc proc(*i);
+    const vector<string> args = {type, user + '@' + *i, cmd};
+    proc proc(type, args);
     procs.push_back(proc);
-    if (!proc.pid_) {
-      dup2(proc.c2p_[WRITE_FD], STDOUT_FILENO);
-      close(proc.c2p_[READ_FD]);
-      close(proc.c2p_[WRITE_FD]);
-      execlp(type, type, const_cast<char*>(string(user + proc.host_).c_str()),
-             const_cast<char*>(cmd.c_str()), NULL);
-    }
-    close(proc.c2p_[WRITE_FD]);
   }
 
   for (vector<proc>::const_iterator i = procs.begin(); i != procs.end(); ++i) {
     const proc& proc = *i;
-    char buf[1024];
+    Poco::PipeInputStream i_str(proc.out_pipe_);
     string out;
-    for (ssize_t s; (s = read(proc.c2p_[READ_FD], buf, sizeof(buf)));) {
-      out += buf;
+    for (int c = i_str.get(); c != -1; c = i_str.get()) {
+      out += static_cast<char>(c);
     }
 
-    int es;
-    waitpid(proc.pid_, &es, 0);
-    string color = es ? "\033[;31m" : "\033[;32m";
+    const int es = proc.proc_hand_.wait();
+    const string color = es ? "\033[;31m" : "\033[;32m";
     cout << color << proc.host_ << " | "
-         << "es=" << WEXITSTATUS(es) << "\033[m\n"
-         << buf << "\n\n";
+         << "es=" << es << "\033[m\n"
+         << out << "\n\n";
   }
 }
 
@@ -124,7 +120,7 @@ int main(const int argc, const char* argv[]) {
 
     const string host_grp = this_str.substr(at_pos, end - at_pos);
     const vector<string> hosts = get_hosts(host_grp);
-    grpCmd(type.c_str(), user, hosts, *(++i));
+    grpCmd(type, user, hosts, *(++i));
     return 0;
   }
 

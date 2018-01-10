@@ -36,6 +36,7 @@ d_compile() {
                         cd bin &&\
                         cmake .. &&\
                         make -j3 all"
+  docker rm -f "$name" || true
 }
 
 set -eu
