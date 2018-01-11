@@ -11,6 +11,7 @@
 #include <Poco/Process.h>
 #include <Poco/PipeStream.h>
 #include <Poco/StreamCopier.h>
+#include <Poco/String.h>
 
 using std::vector;
 using std::string;
@@ -23,28 +24,40 @@ using std::regex_match;
 using Poco::Pipe;
 using Poco::Process;
 using Poco::ProcessHandle;
+using Poco::trim;
 
 vector<string> get_hosts(const string& host_grp) {
   ifstream is("/etc/sxx/hosts");
   vector<string> hosts;
-  for (string line; getline(is, line);) {
-    if (line[0] != '[') {
-      continue;
+  for (char c; is.get(c);) {
+    if (c == '#') {
+      while (is.get(c) && c != '\n') {
+      }
     }
 
-    const size_t end = line.find(']');
-    const string cur_host_grp = line.substr(1, end - 1);
-    if (regex_match(cur_host_grp, regex(host_grp))) {
-      continue;
-    }
+    if (c == '[') {
+      string cur_host_grp;
+      for (; is.get(c) && c != ']' && c != '\n'; cur_host_grp += c) {
+      }
+      trim(cur_host_grp);
 
-    for (string host; getline(is, host);) {
-      if (host[0] == '[') {
-        return hosts;
+      if (!regex_match(cur_host_grp, regex(host_grp))) {
+        continue;
       }
 
-      if (!all_of(host.begin(), host.end(), isspace)) {
-        hosts.push_back(host);
+      for (string host; is.get(c); host += c) {
+        if (c == '[') {
+          return hosts;
+        }
+
+        if (isspace(c)) {
+          trim(host);
+          if (!host.empty()) {
+            hosts.push_back(host);
+            host.clear();
+            continue;
+          }
+        }
       }
     }
   }
