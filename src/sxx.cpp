@@ -43,7 +43,7 @@ vector<string> get_hosts(const string& host_grp) {
         return hosts;
       }
 
-      if (!host.empty()) {
+      if (!all_of(host.begin(), host.end(), isspace)) {
         hosts.push_back(host);
       }
     }
