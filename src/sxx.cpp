@@ -59,23 +59,22 @@ struct proc {
 
   proc(const string& host, const vector<string>& args)
       : host_(host),
-        proc_hand_(Process::launch(args[0], args, 0, &out_pipe_, 0)) {}
+        proc_hand_(
+            Process::launch(args[0], args, nullptr, &out_pipe_, nullptr)) {}
 };
 
-void grpCmd(const string& type,
-            const string& user,
-            const vector<string>& hosts,
-            const string& cmd) {
+void grp_cmd(const string& type,
+             const string& user,
+             const vector<string>& hosts,
+             const string& cmd) {
   vector<proc> procs;
-  for (vector<string>::const_iterator i = hosts.begin(); i != hosts.end();
-       ++i) {
-    const vector<string> args = {type, user + '@' + *i, cmd};
+  for (const string& host : hosts) {
+    const vector<string> args = {type, user + '@' + host, cmd};
     proc proc(type, args);
     procs.push_back(proc);
   }
 
-  for (vector<proc>::const_iterator i = procs.begin(); i != procs.end(); ++i) {
-    const proc& proc = *i;
+  for (const proc& proc : procs) {
     Poco::PipeInputStream i_str(proc.out_pipe_);
     string out;
     for (int c = i_str.get(); c != -1; c = i_str.get()) {
@@ -101,26 +100,26 @@ int main(const int argc, const char* argv[]) {
     type = "ssh";
   }
 
-  for (vector<string>::const_iterator i = args.begin(); i != args.end(); ++i) {
-    const string& this_str = *i;
-    if (this_str[0] == '-') {
+  for (auto i = args.begin(); i != args.end(); ++i) {
+    const string& arg = *i;
+    if (arg[0] == '-') {
       continue;
     }
 
-    size_t at_pos = this_str.find('@');
+    size_t at_pos = arg.find('@');
     string user;
     if (at_pos == string::npos) {
       at_pos = 0;
     } else {
-      user = this_str.substr(0, at_pos) + '@';
+      user = arg.substr(0, at_pos) + '@';
       ++at_pos;
     }
 
-    const size_t end = this_str.size();
+    const size_t end = arg.size();
 
-    const string host_grp = this_str.substr(at_pos, end - at_pos);
+    const string host_grp = arg.substr(at_pos, end - at_pos);
     const vector<string> hosts = get_hosts(host_grp);
-    grpCmd(type, user, hosts, *(++i));
+    grp_cmd(type, user, hosts, *(++i));
     return 0;
   }
 
