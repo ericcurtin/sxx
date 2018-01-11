@@ -46,13 +46,15 @@ cd "$DIR/.."
 
 for doc in $(dockerfiles/docker.sh list); do
   name=$(printf "$doc" | sed "s#curtine/##" | sed "s/:/-/")
-  d_compile "gcc" "g++"
-  d_compile "clang" "clang++"
 
   if [ "$doc" -eq "curtine/sxx:centos6"]; then
     d_run "$name" "$doc"\
       ". /opt/rh/devtoolset-7/enable && rm -rf bin && mkdir bin && cd bin &&\
        cmake .. && make -j3 all"
+    continue
   fi
+
+  d_compile "gcc" "g++"
+  d_compile "clang" "clang++"
 done
 

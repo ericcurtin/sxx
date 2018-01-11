@@ -1,25 +1,16 @@
-#include <unistd.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-
-#include <vector>
 #include <iostream>
-#include <fstream>
 #include <regex>
 #include <fstream>
 
 #include <Poco/Process.h>
 #include <Poco/PipeStream.h>
-#include <Poco/StreamCopier.h>
 #include <Poco/String.h>
 
 using std::vector;
 using std::string;
 using std::ifstream;
 using std::cout;
-using std::cerr;
 using std::regex;
-using std::regex_match;
 
 using Poco::Pipe;
 using Poco::Process;
@@ -52,6 +43,7 @@ vector<string> get_hosts(const string& host_grp) {
 
         if (isspace(c)) {
           trim(host);
+          host.erase(remove(host.begin(), host.end(), '\n'), host.end());
           if (!host.empty()) {
             hosts.push_back(host);
             host.clear();
@@ -70,10 +62,9 @@ struct proc {
   Pipe out_pipe_;
   const ProcessHandle proc_hand_;
 
-  proc(const string& host, const vector<string>& args)
+  proc(const string& host, const string& type, const vector<string>& args)
       : host_(host),
-        proc_hand_(
-            Process::launch(args[0], args, nullptr, &out_pipe_, nullptr)) {}
+        proc_hand_(Process::launch(type, args, nullptr, &out_pipe_, nullptr)) {}
 };
 
 void grp_cmd(const string& type,
@@ -82,8 +73,8 @@ void grp_cmd(const string& type,
              const string& cmd) {
   vector<proc> procs;
   for (const string& host : hosts) {
-    const vector<string> args = {type, user + '@' + host, cmd};
-    proc proc(type, args);
+    const vector<string> args = {user + host, cmd};
+    proc proc(host, type, args);
     procs.push_back(proc);
   }
 
