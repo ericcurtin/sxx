@@ -5,17 +5,18 @@
 #include <Poco/Process.h>
 #include <Poco/PipeStream.h>
 #include <Poco/String.h>
+#include <Poco/Glob.h>
 
 using std::vector;
 using std::string;
 using std::ifstream;
 using std::cout;
-using std::regex;
 
 using Poco::Pipe;
 using Poco::Process;
 using Poco::ProcessHandle;
 using Poco::trim;
+using Poco::Glob;
 
 vector<string> get_hosts(const string& host_grp) {
   ifstream is("/etc/sxx/hosts");
@@ -32,13 +33,15 @@ vector<string> get_hosts(const string& host_grp) {
       }
       trim(cur_host_grp);
 
-      if (!regex_match(cur_host_grp, regex(host_grp))) {
+      Glob glob(host_grp);
+      if (!glob.match(cur_host_grp)) {
         continue;
       }
 
       for (string host; is.get(c); host += c) {
         if (c == '[') {
-          return hosts;
+          is.unget();
+          break;
         }
 
         if (isspace(c)) {

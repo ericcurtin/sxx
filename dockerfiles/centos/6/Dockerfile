@@ -1,7 +1,7 @@
 FROM centos:6
 
-RUN yum install -y epel-release devtoolset-7 &&\
-    yum install -y upstart cmake gcc-c++ poco-devel &&\
+RUN yum install -y epel-release centos-release-scl &&\
+    yum install -y upstart cmake gcc devtoolset-7-gcc-c++ poco-devel &&\
     yum clean all &&\
     rm -rf /tmp/* /var/tmp/* /var/cache/yum
 
