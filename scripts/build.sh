@@ -20,8 +20,8 @@ d_run() {
   docker rm -f "$name" || true
   docker run --privileged -d -v /tmp:/tmp -v "/home/$user:/home/$user" -h\
          "$name" --name "$name" "$img" init
-  d_exe "root" "$name" "groupadd -g $gid $group && useradd -M -s /bin/bash -g\
-                        $gid -u $UID $user"
+  d_exe "root" "$name"\
+    "groupadd -g $gid $group && useradd -M -s /bin/bash -g $gid -u $UID $user"
   d_exe "$UID" "$name" "cd $PWD && $cmd"
   docker rm -f "$name" || true
 }
@@ -29,18 +29,19 @@ d_run() {
 d_compile() {
   local cc=$1
   local cxx=$2
+  local pre=$3
 
-  d_run "$name" "$doc" "export CC=$cc &&\
-                        export CXX=$cxx &&\
-                        rm -rf bin &&\
-                        mkdir bin &&\
-                        cd bin &&\
-                        cmake .. &&\
-                        make -j3 all"
+  if [ -z "$pre" ]; then
+    pre="true"
+  fi
+
+  d_run "$name" "$doc"\
+    "$pre && export CC=$cc && export CXX=$cxx && rm -rf bin && mkdir bin &&\
+     cd bin && cmake .. && make -j3 && make package"
   docker rm -f "$name" || true
 }
 
-set -eu
+set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR/.."
@@ -49,9 +50,7 @@ for doc in $(dockerfiles/docker.sh list); do
   name=$(printf "$doc" | sed "s#curtine/##" | sed "s/:/-/")
 
   if [[ "$doc" == *"centos"* ]]; then
-    d_run "$name" "$doc"\
-      "export CC=gcc && export CXX=g++ && . /opt/rh/devtoolset-7/enable &&\
-       rm -rf bin && mkdir bin && cd bin && cmake .. && make -j3 all"
+    d_compile "gcc" "g++" ". /opt/rh/devtoolset-7/enable"
     continue
   elif [[ "$doc" == *"debian"* ]]; then
     d_compile "clang" "clang++"
