@@ -1,4 +1,8 @@
-# sxx [![Build Status](https://travis-ci.org/ericcurtin/sxx.svg?branch=master)](https://travis-ci.org/ericcurtin/sxx)
+# sxx 
+
+master: [![Build Status](https://travis-ci.org/ericcurtin/sxx.svg?branch=master)](https://travis-ci.org/ericcurtin/sxx)
+
+dev: [![Build Status](https://travis-ci.org/ericcurtin/sxx.svg?branch=dev)](https://travis-ci.org/ericcurtin/sxx)
 
 ## Overview
 
