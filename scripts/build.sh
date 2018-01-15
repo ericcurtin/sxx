@@ -23,6 +23,7 @@ d_run() {
   d_exe "root" "$name" "groupadd -g $gid $group && useradd -M -s /bin/bash -g\
                         $gid -u $UID $user"
   d_exe "$UID" "$name" "cd $PWD && $cmd"
+  docker rm -f "$name" || true
 }
 
 d_compile() {
@@ -47,15 +48,15 @@ cd "$DIR/.."
 for doc in $(dockerfiles/docker.sh list); do
   name=$(printf "$doc" | sed "s#curtine/##" | sed "s/:/-/")
 
-  if [[ "$doc" == "curtine/sxx:centos*" ]]; then
-    export CC=gcc
-    export CXX=g++
+  if [[ "$doc" == *"centos"* ]]; then
     d_run "$name" "$doc"\
-      ". /opt/rh/devtoolset-7/enable && rm -rf bin && mkdir bin && cd bin &&\
-       cmake .. && make -j3 all"
-  else
-    d_compile "gcc" "g++"
+      "export CC=gcc && export CXX=g++ && . /opt/rh/devtoolset-7/enable &&\
+       rm -rf bin && mkdir bin && cd bin && cmake .. && make -j3 all"
+    continue
+  elif [[ "$doc" == *"debian"* ]]; then
     d_compile "clang" "clang++"
   fi
+
+  d_compile "gcc" "g++"
 done
 
