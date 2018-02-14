@@ -71,9 +71,10 @@ struct proc {
 };
 
 void grp_cmd(const string& type,
-             const string& user,
+             const string& arg1,
+             const string& arg2,
              const vector<string>& hosts,
-             const string& cmd) {
+             const string& arg3 = string()) {
   if (type == "list") {
     for (const string& host : hosts) {
       cout << host << '\n';
@@ -83,7 +84,12 @@ void grp_cmd(const string& type,
 
   vector<proc> procs;
   for (const string& host : hosts) {
-    const vector<string> args = {user + host, cmd};
+    vector<string> args;
+    if (type == "ssh") {
+      args = {arg1 + host, arg2};
+    } else {
+      args = {arg1, arg2 + host + arg3};
+    }
     proc proc(host, type, args);
     procs.push_back(proc);
   }
@@ -103,6 +109,32 @@ void grp_cmd(const string& type,
   }
 }
 
+vector<string> split_arg_by_at(string& arg) {
+  const string arg_unaltered = arg;
+  size_t at_pos = arg_unaltered.find('@');
+  if (at_pos == string::npos) {
+    at_pos = 0;
+  } else {
+    arg = arg_unaltered.substr(0, ++at_pos);
+  }
+
+  const size_t end = arg_unaltered.size();
+
+  const string host_grp = arg_unaltered.substr(at_pos, end - at_pos);
+  return get_hosts(host_grp);
+}
+
+string split_arg_by_colon(string& arg) {
+  const string arg_unaltered = arg;
+  const size_t colon_pos = arg_unaltered.find(':');
+
+  arg = arg_unaltered.substr(0, colon_pos);
+
+  const size_t end = arg_unaltered.size();
+
+  return arg_unaltered.substr(colon_pos, end - colon_pos);
+}
+
 int main(const int argc, const char* argv[]) {
   vector<string> args(argv + 1, argv + argc);
 
@@ -115,28 +147,22 @@ int main(const int argc, const char* argv[]) {
     type = "ssh";
   }
 
-  for (auto i = args.begin(); i != args.end(); ++i) {
-    const string& arg = *i;
-    if (arg[0] == '-') {
-      continue;
-    }
-
-    size_t at_pos = arg.find('@');
-    string user;
-    if (at_pos == string::npos) {
-      at_pos = 0;
-    } else {
-      user = arg.substr(0, at_pos) + '@';
-      ++at_pos;
-    }
-
-    const size_t end = arg.size();
-
-    const string host_grp = arg.substr(at_pos, end - at_pos);
-    const vector<string> hosts = get_hosts(host_grp);
-    grp_cmd(type, user, hosts, *(++i));
-    return 0;
+  vector<string>::const_iterator i = args.begin();
+  for (; i < args.end() - 2; ++i) {
   }
 
-  return 1;
+  string arg1 = *(i);
+  string arg2 = *(++i);
+
+  vector<string> hosts;
+  if (type == "ssh" || type == "list") {
+    hosts = split_arg_by_at(arg1);
+    grp_cmd(type, arg1, arg2, hosts);
+  } else {
+    const string arg3 = split_arg_by_colon(arg2);
+    hosts = split_arg_by_at(arg2);
+    grp_cmd(type, arg1, arg2, hosts, arg3);
+  }
+
+  return 0;
 }
