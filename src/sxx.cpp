@@ -74,6 +74,13 @@ void grp_cmd(const string& type,
              const string& user,
              const vector<string>& hosts,
              const string& cmd) {
+  if (type == "list") {
+    for (const string& host : hosts) {
+      cout << host << '\n';
+    }
+    return;
+  }
+
   vector<proc> procs;
   for (const string& host : hosts) {
     const vector<string> args = {user + host, cmd};
@@ -101,7 +108,8 @@ int main(const int argc, const char* argv[]) {
 
   string type = args.empty() ? "" : args[0];
 
-  if (type == "ssh" || type == "scp" || type == "rsync" || type == "term") {
+  if (type == "ssh" || type == "scp" || type == "rsync" || type == "term" ||
+      type == "list") {
     args.erase(args.begin());
   } else {
     type = "ssh";
