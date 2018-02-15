@@ -168,6 +168,10 @@ int main(const int argc, const char* argv[]) {
   string arg1;
   string arg2;
   if (args.size() == 1) {
+    if (type == "ssh") {
+      cerr << "Must specify command for ssh mode\n";
+      return 1;
+    }
     arg1 = args.back();
   } else {
     arg1 = args.end()[-2];
