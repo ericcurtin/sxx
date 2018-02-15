@@ -92,7 +92,11 @@ void grp_cmd(const string& type,
     if (type == "ssh") {
       args = {arg1 + host, arg2};
     } else if (type == "term") {
-      args = {"-e", "ssh " + arg1 + host + " '" + arg2 + '\''};
+      string ssh_command = "ssh " + arg1 + host;
+      if (!arg2.empty()) {
+        ssh_command += " '" + arg2 + '\'';
+      }
+      args = {"-e", ssh_command};
       command = getenv("COLORTERM");
     } else {  // it's an scp or an rsync
       args = {arg1, arg2 + host + arg3};
@@ -161,12 +165,14 @@ int main(const int argc, const char* argv[]) {
     type = "ssh";
   }
 
-  vector<string>::const_iterator i = args.begin();
-  for (; i < args.end() - 2; ++i) {
+  string arg1;
+  string arg2;
+  if (args.size() == 1) {
+    arg1 = args.back();
+  } else {
+    arg1 = args.end()[-2];
+    arg2 = args.back();
   }
-
-  string arg1 = *(i);
-  string arg2 = *(++i);
 
   vector<string> hosts;
   if (type == "ssh" || type == "list" || type == "term") {
