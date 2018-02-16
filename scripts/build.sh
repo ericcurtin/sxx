@@ -35,10 +35,11 @@ d_compile() {
     pre="true"
   fi
 
-  d_run "$name" "$doc"\
-    "$pre && export CC=$cc && export CXX=$cxx && rm -rf bin && mkdir bin &&\
-     cd bin && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. && make -j3 &&\
-     make package"
+  local cmd="$pre && export CC=$cc && export CXX=$cxx && rm -rf bin &&\
+    mkdir bin && cd bin && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
+    make -j3 && make package"
+
+  d_run "$name" "$doc" "$cmd"
   docker rm -f "$name" || true
 }
 
