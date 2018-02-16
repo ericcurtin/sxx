@@ -37,7 +37,8 @@ d_compile() {
 
   d_run "$name" "$doc"\
     "$pre && export CC=$cc && export CXX=$cxx && rm -rf bin && mkdir bin &&\
-     cd bin && cmake .. && make -j3 && make package"
+     cd bin && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. && make -j3 &&\
+     make package"
   docker rm -f "$name" || true
 }
 
