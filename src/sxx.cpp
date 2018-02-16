@@ -154,9 +154,13 @@ string split_arg_by_colon(string& arg) {
 }
 
 int main(const int argc, const char* argv[]) {
-  vector<string> args(argv + 1, argv + argc);
+  if (argc == 1) {
+    cout << "Usage: \n";
+    return 0;
+  }
 
-  string type = args.empty() ? "" : args[0];
+  vector<string> args(argv + 1, argv + argc);
+  string type = args[0];
 
   if (type == "ssh" || type == "scp" || type == "rsync" || type == "term" ||
       type == "list") {
