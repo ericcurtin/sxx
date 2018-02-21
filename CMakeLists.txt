@@ -10,25 +10,37 @@ target_link_libraries(${PROJECT_NAME} PocoFoundation)
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 find_program(rpmbuild_path "rpmbuild" FALSE)
-if(rpmbuild_path)
+if (rpmbuild_path) # is rpm based
   message(STATUS "rpmbuild found, enabling RPM for the 'package' target")
   list(APPEND CPACK_GENERATOR RPM)
-  execute_process(COMMAND /bin/bash -c "rpm -E %{?dist} | sed -e 's/\\.//g' | sed 's/centos//g'" OUTPUT_VARIABLE PLATFORM OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif(rpmbuild_path)
+  if (EXISTS "/etc/redhat-release") # is rhel or centos
+    execute_process(COMMAND /bin/bash -c "rpm -E %{?dist} | sed -e 's/\\.//g' | sed 's/centos//g'" OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+  else () # is opensuse
+    execute_process(COMMAND /bin/bash -c ". /etc/os-release; printf \"%s%.0f\" \"$ID\" \"$VERSION_ID\"" OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif ()
+endif ()
 
 find_program(dpkg_path "dpkg" FALSE)
-if (dpkg_path)
+if (dpkg_path) # is dpkg based
   message(STATUS "dpkg found, enabling DEB for the 'package' target")
   list(APPEND CPACK_GENERATOR DEB)
-  execute_process(COMMAND /bin/bash -c "echo \"$(lsb_release -i | awk '{print tolower($NF)}')-$(lsb_release -c | awk '{print tolower($NF)}')\"" OUTPUT_VARIABLE PLATFORM OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif(dpkg_path)
+  execute_process(COMMAND /bin/bash -c "printf \"$(lsb_release -i | awk '{printf tolower($NF)}')\"" OUTPUT_VARIABLE DISTRO)
+
+  if (${DISTRO} STREQUAL "debian") # is debian
+    execute_process(COMMAND /bin/bash -c "printf \"%.f\" \"$(lsb_release -r | awk '{printf int($NF)}')\"" OUTPUT_VARIABLE DISTRO_VERSION)
+  else () # is ubuntu
+    execute_process(COMMAND /bin/bash -c "printf \"$(lsb_release -r | awk '{printf $NF}')\"" OUTPUT_VARIABLE DISTRO_VERSION)
+  endif ()
+
+  set(DISTRO_AND_VERSION "${DISTRO}${DISTRO_VERSION}")
+endif ()
 
 execute_process(COMMAND /bin/bash -c "uname -m" OUTPUT_VARIABLE CPU_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(CPACK_PACKAGE_CONTACT "ericcurtin17@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "sxx is a tool that allows you to easier run shell COMMANDs on multiple hosts")
 set(CPACK_PACKAGE_URL "https://github.com/ericcurtin/sxx")
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${PLATFORM}-${CPU_ARCH}")
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${DISTRO_AND_VERSION}-${CPU_ARCH}")
 
 include(CPack)
 
