@@ -38,7 +38,7 @@ endif ()
 execute_process(COMMAND /bin/bash -c "uname -m" OUTPUT_VARIABLE CPU_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(CPACK_PACKAGE_CONTACT "ericcurtin17@gmail.com")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "sxx is a tool that allows you to easier run shell COMMANDs on multiple hosts")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "sxx is a tool that allows you to easily run shell commands on multiple hosts or transfer files to multiple hosts")
 set(CPACK_PACKAGE_URL "https://github.com/ericcurtin/sxx")
 set(CPACK_PACKAGE_VERSION_MAJOR 1)
 set(CPACK_PACKAGE_VERSION_MINOR 0)

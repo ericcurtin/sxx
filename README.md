@@ -6,8 +6,7 @@ dev: [![Build Status](https://travis-ci.org/ericcurtin/sxx.svg?branch=dev)](http
 
 ## Overview
 
-sxx is a tool similar to ansible ad-hoc which uses existing ssh, scp, rsync,
-etc. syntax.
+sxx is a tool that allows you to easily run shell commands on multiple hosts or transfer files to multiple hosts
 
 ## Building
 
@@ -17,9 +16,13 @@ To build sxx on all supported platforms, run:
 
 or else do:
 
-  `mkdir bin && cmake .. && make -j3 VERBOSE=1`
+  `mkdir build && cmake .. && make -j3 VERBOSE=1`
 
 ## Installing
+
+Grab latest .deb/.rpm for your platform from:
+
+  https://github.com/ericcurtin/sxx/releases
 
 ## Using
 
