@@ -35,9 +35,10 @@ d_compile() {
     pre="true"
   fi
 
-  local cmd="$pre && export CC=$cc && export CXX=$cxx && rm -rf bin &&\
-    mkdir bin && cd bin && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
-    make -j3 && make package"
+  local cmd="$pre && export CC=$cc && export CXX=$cxx && rm -rf build &&\
+    mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
+    make VERBOSE=1 -j3 && make package; mv *.deb ../pkgs/ 2>/dev/null;
+    mv *.rpm ../pkgs/ 2>/dev/null || true"
 
   d_run "$name" "$doc" "$cmd"
   docker rm -f "$name" || true
@@ -47,6 +48,9 @@ set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR/.."
+
+rm -rf pkgs
+mkdir pkgs
 
 for doc in $(dockerfiles/docker.sh list); do
   name=$(printf "$doc" | sed "s#curtine/##" | sed "s/:/-/")
