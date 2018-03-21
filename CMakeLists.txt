@@ -15,8 +15,10 @@ if (rpmbuild_path) # is rpm based
   list(APPEND CPACK_GENERATOR RPM)
   if (EXISTS "/etc/redhat-release") # is rhel or centos
     execute_process(COMMAND /bin/bash -c "rpm -E %{?dist} | sed -e 's/\\.//g' | sed 's/centos//g'" OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(CPACK_RPM_PACKAGE_REQUIRES "poco-foundation")
   else () # is opensuse
     execute_process(COMMAND /bin/bash -c ". /etc/os-release; printf \"%s%.0f\" \"$ID\" \"$VERSION_ID\"" OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(CPACK_RPM_PACKAGE_REQUIRES "libPocoFoundation60")
   endif ()
 endif ()
 
