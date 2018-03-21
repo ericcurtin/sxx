@@ -28,8 +28,18 @@ if (dpkg_path) # is dpkg based
 
   if (${DISTRO} STREQUAL "debian") # is debian
     execute_process(COMMAND /bin/bash -c "printf \"%.f\" \"$(lsb_release -r | awk '{printf int($NF)}')\"" OUTPUT_VARIABLE DISTRO_VERSION)
+    if (${DISTRO_VERSION} EQUAL 8)
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9")
+    else ()
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation46")
+    endif ()
   else () # is ubuntu
     execute_process(COMMAND /bin/bash -c "printf \"$(lsb_release -r | awk '{printf $NF}')\"" OUTPUT_VARIABLE DISTRO_VERSION)
+    if (${DISTRO_VERSION} EQUAL 14.04) 
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9")
+    else ()
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9v5")
+    endif ()
   endif ()
 
   set(DISTRO_AND_VERSION "${DISTRO}${DISTRO_VERSION}")
