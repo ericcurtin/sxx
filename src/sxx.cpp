@@ -2,6 +2,8 @@
 #include <regex>
 #include <fstream>
 
+#include <termios.h>
+
 #include <Poco/Process.h>
 #include <Poco/PipeStream.h>
 #include <Poco/String.h>
@@ -11,6 +13,7 @@ using std::vector;
 using std::string;
 using std::ifstream;
 using std::cout;
+using std::cin;
 using std::cerr;
 
 using Poco::Pipe;
@@ -73,16 +76,34 @@ struct proc {
             Process::launch(command, args, nullptr, &out_pipe_, &err_pipe_)) {}
 };
 
+void set_stdin_echo(const bool enable) {
+  struct termios tty;
+  tcgetattr(STDIN_FILENO, &tty);
+  if (enable) {
+    tty.c_lflag |= ECHO;
+  } else {
+    tty.c_lflag &= ~ECHO;
+  }
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
 void grp_cmd(const string& type,
              const string& arg1,
              const string& arg2,
              const vector<string>& hosts,
              const string& arg3 = string()) {
+  string password;
   if (type == "list") {
     for (const string& host : hosts) {
       cout << host << '\n';
     }
     return;
+  } else if (type == "copy-id") {
+    cout << "Password: ";
+    set_stdin_echo(false);
+    cin >> password;
+    set_stdin_echo(true);
   }
 
   vector<proc> procs;
@@ -98,6 +119,9 @@ void grp_cmd(const string& type,
       }
       args = {"-e", ssh_command};
       command = getenv("COLORTERM");
+    } else if (type == "copy-id") {
+      command = "sshpass";
+      args = {"-p" + password, "ssh-copy-id", arg1 + host};
     } else {  // it's an scp or an rsync
       args = {arg1, arg2 + host + arg3};
     }
@@ -163,7 +187,7 @@ int main(const int argc, const char* argv[]) {
   string type = args[0];
 
   if (type == "ssh" || type == "scp" || type == "rsync" || type == "term" ||
-      type == "list") {
+      type == "list" || type == "copy-id") {
     args.erase(args.begin());
   } else {  // ssh is the default type if nothing is specified
     type = "ssh";
@@ -182,7 +206,7 @@ int main(const int argc, const char* argv[]) {
   }
 
   vector<string> hosts;
-  if (type == "ssh" || type == "list" || type == "term") {
+  if (type == "ssh" || type == "list" || type == "term" || type == "copy-id") {
     hosts = split_arg_by_at(arg1);
     grp_cmd(type, arg1, arg2, hosts);
   } else {  // it's an scp or an rsync
