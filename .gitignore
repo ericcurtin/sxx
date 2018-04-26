@@ -31,10 +31,11 @@
 *.out
 *.app
 
-# bin
+# Some folders
 bin
+build
 
-# .swp
+# Swap files
 *.swp
 
 # cmake
@@ -53,4 +54,6 @@ _CPack_Packages/
 
 # binary
 sxx
+
+*.gz
 

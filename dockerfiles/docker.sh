@@ -20,7 +20,8 @@ for dir in */*; do
   DOCIMG=$(printf "$dir\n" | sed 's#/##' | sed 's#^#curtine/sxx:#')
 
   if [ "$1" == "build" ]; then
-    /bin/bash -c "cd $dir && docker build -t $DOCIMG ."
+    /bin/bash -c "cd $dir &&\
+      docker build --build-arg http_proxy --build-arg https_proxy --build-arg ftp_proxy -t $DOCIMG ."
     continue
   fi
 

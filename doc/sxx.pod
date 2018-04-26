@@ -1,0 +1,17 @@
+=head1 NAME
+
+ sxx - ssh plus plus
+
+=head1 SYNOPSIS
+
+ Usage: 1. sxx mode [user@]host [command]
+   or   2. sxx mode file1 [[user@]host:]file2
+ 1. if mode is ssh, list, term or ssh-copy-id
+ 2. if mode is scp or rsync
+ default mode is ssh if command is provided, term otherwize
+
+=head1 DESCRIPTION
+
+ sxx is a tool that allows you to easily run shell commands on multiple hosts,
+ copy ssh keys or transfer files to multiple hosts.
+

@@ -37,11 +37,12 @@ d_compile() {
 
   local cmd="$pre && export CC=$cc && export CXX=$cxx && rm -rf build &&\
     mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
-    make VERBOSE=1 -j3 && make package; mv *.deb ../pkgs/ 2>/dev/null;
-    mv *.rpm ../pkgs/ 2>/dev/null || true"
+    make VERBOSE=1 -j3 all doc && make package && ctest -j3"
 
   d_run "$name" "$doc" "$cmd"
   docker rm -f "$name" || true
+  mv build/*.deb pkgs/ 2>/dev/null || true
+  mv build/*.rpm pkgs/ 2>/dev/null || true
 }
 
 set -e
@@ -58,7 +59,7 @@ for doc in $(dockerfiles/docker.sh list); do
   if [[ "$doc" == *"centos"* ]]; then
     d_compile "gcc" "g++" ". /opt/rh/devtoolset-7/enable"
     continue
-  elif [[ "$doc" == *"debian"* ]]; then
+  else
     d_compile "clang" "clang++"
   fi
 
