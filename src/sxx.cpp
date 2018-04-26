@@ -88,18 +88,47 @@ void set_stdin_echo(const bool enable) {
   tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-void grp_cmd(const string& type,
+enum id { ssh, scp, rsync, term, list, copy_id };
+
+struct type {
+  id id_;
+  string name_;
+
+  type() : id_(ssh), name_("ssh") {}
+
+  type(const string& type_str) {
+    name_ = type_str;
+    if (type_str == "scp") {
+      id_ = scp;
+    } else if (type_str == "rsync") {
+      id_ = rsync;
+    } else if (type_str == "term") {
+      id_ = term;
+    } else if (type_str == "list") {
+      id_ = list;
+    } else if (type_str == "copy-id") {
+      id_ = copy_id;
+    } else if (type_str == "ssh") {
+      id_ = ssh;
+    } else {
+      cerr << "Invalid type '" << type_str << "'\n";
+      exit(-1);
+    }
+  }
+};
+
+void grp_cmd(const type& type,
              const string& arg1,
              const string& arg2,
              const vector<string>& hosts,
              const string& arg3 = string()) {
   string password;
-  if (type == "list") {
+  if (type.id_ == list) {
     for (const string& host : hosts) {
       cout << host << '\n';
     }
     return;
-  } else if (type == "copy-id") {
+  } else if (type.id_ == copy_id) {
     cout << "Password: ";
     set_stdin_echo(false);
     cin >> password;
@@ -109,23 +138,23 @@ void grp_cmd(const string& type,
   vector<proc> procs;
   for (const string& host : hosts) {
     vector<string> args;
-    string command = type;
-    if (type == "ssh") {
+    string cmd = type.name_;
+    if (type.id_ == ssh) {
       args = {arg1 + host, arg2};
-    } else if (type == "term") {
+    } else if (type.id_ == term) {
       string ssh_command = "ssh " + arg1 + host;
       if (!arg2.empty()) {
         ssh_command += " '" + arg2 + '\'';
       }
       args = {"-e", ssh_command};
-      command = getenv("COLORTERM");
-    } else if (type == "copy-id") {
-      command = "sshpass";
+      cmd = getenv("COLORTERM");
+    } else if (type.id_ == copy_id) {
+      cmd = "sshpass";
       args = {"-p" + password, "ssh-copy-id", arg1 + host};
     } else {  // it's an scp or an rsync
       args = {arg1, arg2 + host + arg3};
     }
-    proc proc(host, command, args);
+    proc proc(host, cmd, args);
     procs.push_back(proc);
   }
 
@@ -179,41 +208,31 @@ string split_arg_by_colon(string& arg) {
 
 int main(const int argc, const char* argv[]) {
   if (argc == 1) {
-    cout << "Usage: \n";
+    cout << "Usage: 1. sxx [mode] [user@]hostname [command]\n"
+            "  or   2. sxx [mode] [user@]hostname [command]\n"
+            "1. if mode is ssh, list, term or copy id\n"
+            "2. if mode is scp or rsync\n"
+            "default mode is ssh if command is provided, term otherwize\n";
     return 0;
   }
 
   vector<string> args(argv + 1, argv + argc);
-  string type = args[0];
+  type type(args[0]);
 
-  if (type == "ssh" || type == "scp" || type == "rsync" || type == "term" ||
-      type == "list" || type == "copy-id") {
-    args.erase(args.begin());
-  } else {  // ssh is the default type if nothing is specified
-    type = "ssh";
-  }
-
-  string arg1;
-  string arg2;
-  if (args.size() == 1) {
-    if (type == "ssh") {
-      type = "term";
-    }
-    arg1 = args.back();
-  } else {
-    arg1 = args.end()[-2];
-    arg2 = args.back();
-  }
+  const string& shell = args.size() < 3 ? "" : args[2];
 
   vector<string> hosts;
-  if (type == "ssh" || type == "list" || type == "term" || type == "copy-id") {
-    hosts = split_arg_by_at(arg1);
-    grp_cmd(type, arg1, arg2, hosts);
+  if (type.id_ == ssh || type.id_ == list || type.id_ == term ||
+      type.id_ == copy_id) {
+    hosts = split_arg_by_at(args[1]);
+    const string& usr = args[1];
+    grp_cmd(type, usr, shell, hosts);
   } else {  // it's an scp or an rsync
-    const string arg3 = split_arg_by_colon(arg2);
-    hosts = split_arg_by_at(arg2);
-    grp_cmd(type, arg1, arg2, hosts, arg3);
+//    const string arg3 = split_arg_by_colon(arg2);
+//    hosts = split_arg_by_at(arg2);
+//    grp_cmd(type, arg1, arg2, hosts, arg3);
   }
 
   return 0;
 }
+

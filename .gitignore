@@ -54,3 +54,5 @@ _CPack_Packages/
 # binary
 sxx
 
+*.gz
+
