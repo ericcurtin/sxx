@@ -2,7 +2,21 @@ project(sxx)
 cmake_minimum_required(VERSION 2.8)
 cmake_policy(SET CMP0050 OLD)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
+include_directories(include)
+
+set(CMAKE_CXX_FLAGS "-std=c++11 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
+
+set(COVERAGE OFF CACHE BOOL "Coverage")
+
+if (COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif ()
 
 add_executable(${PROJECT_NAME} src/sxx.cpp)
 
@@ -81,4 +95,7 @@ ADD_CUSTOM_COMMAND(TARGET doc SOURCE doc
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz
   DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
+
+enable_testing()
+add_subdirectory(test)
 
