@@ -39,8 +39,17 @@ d_compile() {
     mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
     make VERBOSE=1 -j3 all doc && make package && ctest -j3"
 
+  if [[ "$doc" != *"centos"* ]] && [[ "$doc" != *"opensuse"* ]]; then
+    cmd="$cmd && cd - && rm -rf build && mkdir build && cd build &&\
+      cmake .. -DCOVERAGE=ON && make VERBOSE=1 -j3 && ctest -j3 &&\
+      cd - && rm -rf build && mkdir build && cd build && cmake .. -DASAN=ON &&\
+      make VERBOSE=1 -j3 && ctest -j3 &&\
+      cd - && rm -rf build && mkdir build && cd build && cmake .. -DUBSAN=ON &&\
+      make VERBOSE=1 -j3 && ctest -j3"
+  fi
+
   d_run "$name" "$doc" "$cmd"
-  docker rm -f "$name" || true
+
   mv build/*.deb pkgs/ 2>/dev/null || true
   mv build/*.rpm pkgs/ 2>/dev/null || true
 }

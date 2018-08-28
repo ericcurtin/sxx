@@ -5,14 +5,25 @@ include_directories(include)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
 
-set(COVERAGE OFF CACHE BOOL "Coverage")
-
 if (COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+elseif (ASAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
+elseif (UBSAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+elseif (TSAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
 else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
@@ -81,20 +92,24 @@ set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${DISTRO_A
 
 include(CPack)
 
-ADD_CUSTOM_TARGET(doc)
+add_custom_target(doc)
 
-ADD_CUSTOM_COMMAND(TARGET doc SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sxx.pod
+add_custom_command(TARGET doc SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sxx.pod
   COMMAND podchecker --nowarnings ${CMAKE_CURRENT_SOURCE_DIR}/doc/sxx.pod
   COMMAND pod2man -c 'sxx manual' -q none -r 'sxx ${CPACK_PACKAGE_VERSION}' ${CMAKE_CURRENT_SOURCE_DIR}/doc/sxx.pod ${CMAKE_CURRENT_BINARY_DIR}/sxx.1
   COMMAND gzip -f ${CMAKE_CURRENT_BINARY_DIR}/sxx.1
   OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz)
 
-ADD_CUSTOM_COMMAND(TARGET doc SOURCE doc
+add_custom_command(TARGET doc SOURCE doc
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz)
 
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz
+  DESTINATION ${CMAKE_install_PREFIX}/man/man1)
 
 enable_testing()
 add_subdirectory(test)
+
+# make format - clang-format stuff
+
+add_custom_target(format COMMAND clang-format -i -style=file ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp)
 
