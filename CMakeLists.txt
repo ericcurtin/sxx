@@ -6,24 +6,14 @@ include_directories(include)
 set(CMAKE_CXX_FLAGS "-std=c++11 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
 
 if (COVERAGE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 elseif (ASAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak")
 elseif (UBSAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsanitize=undefined")
 elseif (TSAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fsanitize=thread")
 else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
@@ -31,6 +21,8 @@ endif ()
 add_executable(${PROJECT_NAME} src/sxx.cpp)
 
 target_link_libraries(${PROJECT_NAME} PocoFoundation)
+
+# packaging
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
@@ -69,8 +61,10 @@ if (dpkg_path) # is dpkg based
       OUTPUT_VARIABLE DISTRO_VERSION)
     if (${DISTRO_VERSION} EQUAL 14.04) 
       set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9")
-    else ()
+    elseif (${DISTRO_VERSION} EQUAL 16.04)
       set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9v5")
+    else ()
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation50")
     endif ()
   endif ()
 
@@ -92,6 +86,8 @@ set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${DISTRO_A
 
 include(CPack)
 
+# man pages
+
 add_custom_target(doc)
 
 add_custom_command(TARGET doc SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sxx.pod
@@ -106,10 +102,12 @@ add_custom_command(TARGET doc SOURCE doc
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sxx.1.gz
   DESTINATION ${CMAKE_install_PREFIX}/man/man1)
 
+# ctest
+
 enable_testing()
 add_subdirectory(test)
 
-# make format - clang-format stuff
+# make format - clang-format
 
 add_custom_target(format COMMAND clang-format -i -style=file ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp)
 
