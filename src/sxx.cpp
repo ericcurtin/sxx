@@ -18,6 +18,10 @@ int main(const int argc, const char* argv[]) {
 
   if (type.id_ == ssh || type.id_ == list || type.id_ == term ||
       type.id_ == ssh_copy_id) {
+    if (type.id_ == ssh && args.size() < 3) {
+      cout << "Usage: sxx ssh [user@]host command\n";
+    }
+
     string& host = args[1];
     const string& cmd = args.size() == 2 ? "" : args[2];
     const string usr = split_by_char(host, '@');
