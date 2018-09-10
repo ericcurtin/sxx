@@ -35,18 +35,20 @@ d_compile() {
     pre="true"
   fi
 
-  local cmd="$pre && export CC=$cc && export CXX=$cxx && rm -rf build &&\
-    mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. &&\
-    make VERBOSE=1 -j3 all doc && make package && ctest -j3"
+  local cmd="$pre && export CC=$cc && export CXX=$cxx && cd $PWD"
 
   if [[ "$doc" != *"centos"* ]] && [[ "$doc" != *"opensuse"* ]]; then
-    cmd="$cmd && cd - && rm -rf build && mkdir build && cd build &&\
+    cmd="$cmd && rm -rf build && mkdir build && cd build &&\
       cmake .. -DCOVERAGE=ON && make VERBOSE=1 -j3 && ctest -j3 &&\
       cd - && rm -rf build && mkdir build && cd build && cmake .. -DASAN=ON &&\
       make VERBOSE=1 -j3 && ctest -j3 &&\
       cd - && rm -rf build && mkdir build && cd build && cmake .. -DUBSAN=ON &&\
       make VERBOSE=1 -j3 && ctest -j3"
   fi
+
+  cmd="$cmd && cd - && rm -rf build && mkdir build && cd build &&\
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. && make VERBOSE=1 -j3 all doc &&\
+    make package && ctest -j3"
 
   d_run "$name" "$doc" "$cmd"
 

@@ -18,9 +18,10 @@ int main(const int argc, const char* argv[]) {
   type type(args[0]);
 
   if (type.id_ == ssh || type.id_ == list || type.id_ == term ||
-      type.id_ == ssh_copy_id) {
-    if (type.id_ == ssh && args.size() < 3) {
-      cout << "Usage: sxx ssh [user@]host command\n";
+      type.id_ == ssh_copy_id || type.id_ == exe) {
+    if ((type.id_ == ssh || type.id_ == exe) && args.size() < 3) {
+      const string last_arg = type.id_ == ssh ? "command\n" : "script\n";
+      cout << "Usage: sxx " << type.name_ << " [user@]host " << last_arg;
     }
 
     string& host = args[1];

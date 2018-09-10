@@ -43,11 +43,20 @@ for my $doc (@docker_names) {
   my($first, $second) = split(":", $doc, 2);
   $second =~ s/centos/el/;
 
+  my $cmd;
+  if ($second =~ m/el/ || $second =~ m/opensuse/) {
+    $cmd = "rpm -i";
+  }
+  else {
+    $cmd = "dpkg -i";
+  }
+
+  $cmd = "ls pkgs/*$second* | xargs $cmd";
+
   my $name = $doc;
   $name =~ s#curtine/##;
   $name =~ s/:/-/;
 
-  my $cmd = "date";
   d_run($name, $doc, $cmd);
 }
 

@@ -71,7 +71,7 @@ void set_stdin_echo(const bool enable) {
   tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-enum id { ssh, scp, rsync, term, list, ssh_copy_id };
+enum id { ssh, scp, rsync, term, list, ssh_copy_id, exe };
 
 struct type {
   id id_;
@@ -93,6 +93,8 @@ struct type {
       id_ = ssh_copy_id;
     } else if (type_str == "ssh") {
       id_ = ssh;
+    } else if (type_str == "exe") {
+      id_ = exe;
     } else {
       std::cerr << "Invalid type '" << type_str << "'\n";
       exit(-1);
@@ -128,6 +130,7 @@ void grp_cmd(const type& type,
   for (const auto& host : hosts) {
     std::vector<std::string> args;
     std::string cmd = type.name_;
+    std::string file_contents;
     if (type.id_ == ssh) {
       args = {"-p", host.second, usr + host.first, arg1};
     } else if (type.id_ == term) {
@@ -141,13 +144,39 @@ void grp_cmd(const type& type,
     } else if (type.id_ == ssh_copy_id) {
       cmd = "sshpass";
       args = {"-p" + password, type.name_, "-p", host.second, usr + host.first};
+    } else if (type.id_ == exe) {
+      FILE* file = fopen(arg1.c_str(), "r");
+      if (!file) {
+        std::cerr << "fopen failed\n";
+        return;
+      }
+
+      char* line = 0;
+      size_t len;
+      ssize_t nread = getline(&line, &len, file);
+      std::string interpreter = line + 2;
+      interpreter.pop_back();
+      if (nread  == -1) {
+        std::cerr << "getline failed\n";
+        return;
+      }
+
+      while ((nread = getline(&line, &len, file)) != - 1) {
+        file_contents += line;
+      }
+
+      fclose(file);
+
+      args = {"-p", host.second, usr + host.first, interpreter};
+
+      free(line);
     } else if (type.id_ == scp) {
       args = {"-P", host.second, arg1, usr + host.first + arg2};
     } else {  // it's an rsync
       args = {"-e", "ssh -p " + host.second, arg1, usr + host.first + arg2};
     }
 
-    proc proc(host.first, cmd, args);
+    proc proc(host.first, cmd, args, file_contents);
     procs.push_back(proc);
   }
 
