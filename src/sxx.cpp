@@ -3,6 +3,7 @@
 using std::cout;
 using std::string;
 using std::vector;
+using std::map;
 
 int main(const int argc, const char* argv[]) {
   if (argc == 1) {
@@ -25,7 +26,7 @@ int main(const int argc, const char* argv[]) {
     string& host = args[1];
     const string& cmd = args.size() == 2 ? "" : args[2];
     const string usr = split_by_char(host, '@');
-    const vector<string> hosts = get_hosts(host);
+    const map<string, string> hosts = get_hosts(host);
     grp_cmd(type, hosts, usr, cmd);
   } else {  // it's an scp or an rsync
     const string& file1 = args[1];
@@ -34,7 +35,7 @@ int main(const int argc, const char* argv[]) {
     host.pop_back();
     file2 = ':' + file2;
     const string usr = split_by_char(host, '@');
-    const vector<string> hosts = get_hosts(host);
+    const map<string, string> hosts = get_hosts(host);
     grp_cmd(type, hosts, usr, file1, file2);
   }
 

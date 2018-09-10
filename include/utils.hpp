@@ -4,17 +4,21 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 
 #include <termios.h>
 
 #include <Poco/Glob.h>
 #include <Poco/String.h>
+#include <Poco/URI.h>
 
 #include "proc.hpp"
 
-std::vector<std::string> get_hosts(const std::string& host_grp) {
+std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
   std::ifstream is("/etc/sxx/hosts");
-  std::vector<std::string> hosts;
+
+  // map<host, port>
+  std::map<std::string, std::string> hosts;
   for (char c; is.get(c);) {
     if (c == '#') {
       while (is.get(c) && c != '\n') {
@@ -42,7 +46,8 @@ std::vector<std::string> get_hosts(const std::string& host_grp) {
           Poco::trim(host);
           host.erase(remove(host.begin(), host.end(), '\n'), host.end());
           if (!host.empty()) {
-            hosts.push_back(host);
+            const Poco::URI uri("ssh://" + host);
+            hosts[uri.getHost()] = std::to_string(uri.getPort());
             host.clear();
             continue;
           }
@@ -96,14 +101,19 @@ struct type {
 };
 
 void grp_cmd(const type& type,
-             const std::vector<std::string>& hosts,
+             const std::map<std::string, std::string>& hosts,
              const std::string& usr,
              const std::string& arg1,
              const std::string& arg2 = "") {
   std::string password;
   if (type.id_ == list) {
-    for (const std::string& host : hosts) {
-      std::cout << host << '\n';
+    for (const auto& host : hosts) {
+      std::string list = host.first;
+      if (host.second != "22") {
+        list += ":" + host.second;
+      }
+
+      std::cout << list << '\n';
     }
     return;
   } else if (type.id_ == ssh_copy_id) {
@@ -115,13 +125,14 @@ void grp_cmd(const type& type,
   }
 
   std::vector<proc> procs;
-  for (const std::string& host : hosts) {
+  for (const auto& host : hosts) {
     std::vector<std::string> args;
     std::string cmd = type.name_;
     if (type.id_ == ssh) {
-      args = {usr + host, arg1};
+      args = {"-p", host.second, usr + host.first, arg1};
     } else if (type.id_ == term) {
-      std::string ssh_command = "ssh " + usr + host;
+      std::string ssh_command =
+          "ssh -p " + host.second + ' ' + usr + host.first;
       if (!arg1.empty()) {
         ssh_command += " '" + arg1 + '\'';
       }
@@ -129,11 +140,14 @@ void grp_cmd(const type& type,
       cmd = getenv("COLORTERM");
     } else if (type.id_ == ssh_copy_id) {
       cmd = "sshpass";
-      args = {"-p" + password, type.name_, usr + host};
-    } else {  // it's an scp or an rsync
-      args = {arg1, usr + host + arg2};
+      args = {"-p" + password, type.name_, "-p", host.second, usr + host.first};
+    } else if (type.id_ == scp) {
+      args = {"-P", host.second, arg1, usr + host.first + arg2};
+    } else {  // it's an rsync
+      args = {"-e", "ssh -p " + host.second, arg1, usr + host.first + arg2};
     }
-    proc proc(host, cmd, args);
+
+    proc proc(host.first, cmd, args);
     procs.push_back(proc);
   }
 
