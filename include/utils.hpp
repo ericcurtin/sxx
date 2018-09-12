@@ -19,39 +19,20 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
 
   // map<host, port>
   std::map<std::string, std::string> hosts;
-  for (char c; is.get(c);) {
-    if (c == '#') {
-      while (is.get(c) && c != '\n') {
-      }
-    }
-
-    if (c == '[') {
-      std::string cur_host_grp;
-      for (; is.get(c) && c != ']' && c != '\n'; cur_host_grp += c) {
-      }
-      Poco::trim(cur_host_grp);
-
-      Poco::Glob glob(host_grp);
-      if (!glob.match(cur_host_grp)) {
-        continue;
-      }
-
-      for (std::string host; is.get(c); host += c) {
-        if (c == '[') {
-          is.unget();
-          break;
+  std::string section;
+  for (std::string line; getline(is, line);) {
+    Poco::trim(line);
+    if (!line.empty() && line[0] != '#') {
+      size_t end;
+      if (line[0] == '[' && (end = line.find(']')) != std::string::npos) {
+        section = line.substr(1, end - 1);
+        Poco::Glob glob(host_grp);
+        if (!glob.match(section)) {
+          section = "";
         }
-
-        if (isspace(c)) {
-          Poco::trim(host);
-          host.erase(remove(host.begin(), host.end(), '\n'), host.end());
-          if (!host.empty()) {
-            const Poco::URI uri("ssh://" + host);
-            hosts[uri.getHost()] = std::to_string(uri.getPort());
-            host.clear();
-            continue;
-          }
-        }
+      } else if (!section.empty()) {
+        const Poco::URI uri("ssh://" + line);
+        hosts[uri.getHost()] = std::to_string(uri.getPort());
       }
     }
   }
@@ -145,31 +126,16 @@ void grp_cmd(const type& type,
       cmd = "sshpass";
       args = {"-p" + password, type.name_, "-p", host.second, usr + host.first};
     } else if (type.id_ == exe) {
-      FILE* file = fopen(arg1.c_str(), "r");
-      if (!file) {
-        std::cerr << "fopen failed\n";
-        return;
-      }
+      std::ifstream is(arg1);
+      std::string interpreter;
+      getline(is, interpreter);
+      interpreter.substr(2);
 
-      char* line = 0;
-      size_t len;
-      ssize_t nread = getline(&line, &len, file);
-      std::string interpreter = line + 2;
-      interpreter.pop_back();
-      if (nread  == -1) {
-        std::cerr << "getline failed\n";
-        return;
-      }
-
-      while ((nread = getline(&line, &len, file)) != - 1) {
+      for (std::string line; getline(is, line);) {
         file_contents += line;
       }
 
-      fclose(file);
-
       args = {"-p", host.second, usr + host.first, interpreter};
-
-      free(line);
     } else if (type.id_ == scp) {
       args = {"-P", host.second, arg1, usr + host.first + arg2};
     } else {  // it's an rsync
