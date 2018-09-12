@@ -197,8 +197,9 @@ void grp_cmd(const type& type,
     const std::string color = es ? "\033[;31m" : "\033[;32m";
     std::cout << color << proc.host_ << " | "
               << "es=" << es << "\033[m\n";
-    std::cout << out << '\n';
-    std::cerr << err << '\n';
+    std::cout << out;
+    std::cerr << err;
+    std::cout << '\n';
   }
 }
 
