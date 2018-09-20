@@ -37,6 +37,11 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
     }
   }
 
+  if (hosts.empty()) {
+    const Poco::URI uri("ssh://" + host_grp);
+    hosts[uri.getHost()] = std::to_string(uri.getPort());
+  }
+
   return hosts;
 }
 
