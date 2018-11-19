@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <iostream>
 #include <map>
 
 #include <termios.h>
@@ -23,6 +22,11 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
   for (std::string line; getline(is, line);) {
     Poco::trim(line);
     if (!line.empty() && line[0] != '#') {
+      if (host_grp.empty()) {
+        printf("%s\n", line.c_str());
+        continue;
+      }
+
       size_t end;
       if (line[0] == '[' && (end = line.find(']')) != std::string::npos) {
         section = line.substr(1, end - 1);
@@ -82,7 +86,7 @@ struct type {
     } else if (type_str == "exe") {
       id_ = exe;
     } else {
-      std::cerr << "Invalid type '" << type_str << "'\n";
+      fprintf(stderr, "Invalid type '%s'\n", type_str.c_str());
       exit(-1);
     }
   }
@@ -101,15 +105,22 @@ void grp_cmd(const type& type,
         list += ":" + host.second;
       }
 
-      std::cout << list << '\n';
+      printf("%s\n", list.c_str());
     }
     return;
   } else if (type.id_ == ssh_copy_id) {
-    std::cout << "Password: ";
+    printf("Password: ");
     set_stdin_echo(false);
-    std::cin >> password;
+    char* password_c_str = NULL;
+    size_t len = 0;
+    if (getline(&password_c_str, &len, stdin) == -1) {
+      fprintf(stderr, "getline\n");
+    }
+
+    password = password_c_str;
+    free(password_c_str);
     set_stdin_echo(true);
-    std::cout << '\n';
+    printf("\n");
   }
 
   std::vector<proc> procs;
@@ -166,11 +177,10 @@ void grp_cmd(const type& type,
 
     const int es = proc.proc_hand_.wait();
     const std::string color = es ? "\033[;31m" : "\033[;32m";
-    std::cout << color << proc.host_ << " | "
-              << "es=" << es << "\033[m\n";
-    std::cout << out;
-    std::cerr << err;
-    std::cout << '\n';
+    printf("%s%s | es=%d\033[m\n", color.c_str(), proc.host_.c_str(), es);
+    printf("%s", out.c_str());
+    fprintf(stderr, "%s", err.c_str());
+    printf("\n");
   }
 }
 

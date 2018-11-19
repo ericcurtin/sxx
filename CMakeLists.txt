@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 
 include_directories(include)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
+set(CMAKE_CXX_FLAGS "-ggdb -std=c++11 -Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Wold-style-cast -Wcast-align -Wunused -Wcast-qual -Woverloaded-virtual -Wconversion -Wformat-security -Wwrite-strings -fdiagnostics-show-option")
 
 if (COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
