@@ -1,17 +1,17 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <fnmatch.h>
+#include <termios.h>
+
 #include <algorithm>
 #include <fstream>
 #include <map>
 
-#include <termios.h>
-
-#include <Poco/Glob.h>
-#include <Poco/String.h>
-#include <Poco/URI.h>
+#include <boost/algorithm/string.hpp>
 
 #include "proc.hpp"
+#include "uri.hpp"
 
 std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
   std::ifstream is("/etc/sxx/hosts");
@@ -20,7 +20,7 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
   std::map<std::string, std::string> hosts;
   std::string section;
   for (std::string line; getline(is, line);) {
-    Poco::trim(line);
+    boost::trim(line);
     if (!line.empty() && line[0] != '#') {
       if (host_grp.empty()) {
         printf("%s\n", line.c_str());
@@ -30,20 +30,19 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
       size_t end;
       if (line[0] == '[' && (end = line.find(']')) != std::string::npos) {
         section = line.substr(1, end - 1);
-        Poco::Glob glob(host_grp);
-        if (!glob.match(section)) {
+        if (fnmatch(host_grp.c_str(), section.c_str(), 0)) {
           section = "";
         }
       } else if (!section.empty()) {
-        const Poco::URI uri("ssh://" + line);
-        hosts[uri.getHost()] = std::to_string(uri.getPort());
+        const uri uri(line);
+        hosts[uri.host_] = uri.port_;
       }
     }
   }
 
   if (hosts.empty()) {
-    const Poco::URI uri("ssh://" + host_grp);
-    hosts[uri.getHost()] = std::to_string(uri.getPort());
+    const uri uri(host_grp);
+    hosts[uri.host_] = uri.port_;
   }
 
   return hosts;

@@ -15,7 +15,7 @@ elseif (UBSAN)
 elseif (TSAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fsanitize=thread")
 else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto")
 endif ()
 
 add_executable(${PROJECT_NAME} src/sxx.cpp)

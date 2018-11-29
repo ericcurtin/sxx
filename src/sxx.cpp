@@ -7,7 +7,7 @@ using std::map;
 int main(const int argc, const char* argv[]) {
   if (argc == 1) {
     printf("Usage: 1. sxx mode [[user@]host] [command]\n"
-           "  or   2. sxx mode file1 [[user@]host:]file2\n"
+           "  or   2. sxx mode file1 [[user@]host]file2\n"
            "1. if mode is ssh, list, term or ssh-copy-id\n"
            "2. if mode is scp or rsync\n");
     return 0;
