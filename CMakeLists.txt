@@ -20,8 +20,6 @@ endif ()
 
 add_executable(${PROJECT_NAME} src/sxx.cpp)
 
-target_link_libraries(${PROJECT_NAME} PocoFoundation)
-
 # packaging
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
@@ -33,11 +31,9 @@ if (rpmbuild_path) # is rpm based
   if (EXISTS "/etc/redhat-release") # is rhel or centos
     execute_process(COMMAND /bin/bash -c "rpm -E %{?dist} | sed -e 's/\\.//g' | sed 's/centos//g'"
       OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(CPACK_RPM_PACKAGE_REQUIRES "poco-foundation")
   else () # is opensuse
     execute_process(COMMAND /bin/bash -c ". /etc/os-release; printf \"%s%.0f\" \"$ID\" \"$VERSION_ID\""
       OUTPUT_VARIABLE DISTRO_AND_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(CPACK_RPM_PACKAGE_REQUIRES "libPocoFoundation60")
   endif ()
 endif ()
 
@@ -51,21 +47,9 @@ if (dpkg_path) # is dpkg based
   if (${DISTRO} STREQUAL "debian") # is debian
     execute_process(COMMAND /bin/bash -c "printf \"%.f\" \"$(lsb_release -r | awk '{printf int($NF)}')\""
       OUTPUT_VARIABLE DISTRO_VERSION)
-    if (${DISTRO_VERSION} EQUAL 8)
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9")
-    else ()
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation46")
-    endif ()
   else () # is ubuntu
     execute_process(COMMAND /bin/bash -c "printf \"$(lsb_release -r | awk '{printf $NF}')\""
       OUTPUT_VARIABLE DISTRO_VERSION)
-    if (${DISTRO_VERSION} EQUAL 14.04) 
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9")
-    elseif (${DISTRO_VERSION} EQUAL 16.04)
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation9v5")
-    else ()
-      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpocofoundation50")
-    endif ()
   endif ()
 
   set(DISTRO_AND_VERSION "${DISTRO}${DISTRO_VERSION}")

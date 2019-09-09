@@ -14,16 +14,29 @@
 #include "uri.hpp"
 
 std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
-  std::ifstream is("/etc/sxx/hosts");
-
+    printf("%s:%d\n", __FILE__, __LINE__);
   // map<host, port>
   std::map<std::string, std::string> hosts;
+
+  FILE* fp = fopen("/etc/sxx/hosts", "r");
+  if (!fp) {
+      exit(EXIT_FAILURE);
+  }
+
+  printf("%s:%d\n", __FILE__, __LINE__);
   std::string section;
-  for (std::string line; getline(is, line);) {
+  ssize_t read;
+  char* line_c_str;
+  for (size_t len; (read = getline(&line_c_str, &len, fp)) != -1;) {
+    printf("%s:%d\n", __FILE__, __LINE__);
+    std::string line = line_c_str;
+    printf("'%s' %s:%d\n", line.c_str(), __FILE__, __LINE__);
     boost::trim(line);
+    printf("'%s' %s:%d\n", line.c_str(), __FILE__, __LINE__);
     if (!line.empty() && line[0] != '#') {
+      printf("'%s' '%s' %s:%d\n", line.c_str(), host_grp.c_str(), __FILE__, __LINE__);
       if (host_grp.empty()) {
-        printf("%s\n", line.c_str());
+        printf("'%s' '%s' %s:%d\n", line.c_str(), host_grp.c_str(), __FILE__, __LINE__);
         continue;
       }
 
@@ -40,11 +53,20 @@ std::map<std::string, std::string> get_hosts(const std::string& host_grp) {
     }
   }
 
+  printf("%s:%d\n", __FILE__, __LINE__);
+  fclose(fp);
+  printf("%s:%d\n", __FILE__, __LINE__);
+  free(line_c_str);
+  printf("%s:%d\n", __FILE__, __LINE__);
   if (hosts.empty()) {
+    printf("'%s' %s:%d\n", host_grp.c_str(), __FILE__, __LINE__);
     const uri uri(host_grp);
+    printf("%s:%d\n", __FILE__, __LINE__);
     hosts[uri.host_] = uri.port_;
+    printf("%s:%d\n", __FILE__, __LINE__);
   }
 
+  printf("%s:%d\n", __FILE__, __LINE__);
   return hosts;
 }
 
@@ -96,6 +118,7 @@ void grp_cmd(const type& type,
              const std::string& usr,
              const std::string& arg1,
              const std::string& arg2 = "") {
+  printf("%s:%d\n", __FILE__, __LINE__);
   std::string password;
   if (type.id_ == list) {
     for (const auto& host : hosts) {
@@ -126,7 +149,7 @@ void grp_cmd(const type& type,
   for (const auto& host : hosts) {
     std::vector<std::string> args;
     std::string cmd = type.name_;
-    std::string file_contents;
+    // std::string file_contents;
     if (type.id_ == ssh) {
       args = {"-p", host.second, usr + host.first, arg1};
     } else if (type.id_ == term) {
@@ -135,13 +158,14 @@ void grp_cmd(const type& type,
       if (!arg1.empty()) {
         ssh_command += " '" + arg1 + '\'';
       }
+
       args = {"-e", ssh_command};
       cmd = getenv("COLORTERM");
     } else if (type.id_ == ssh_copy_id) {
       cmd = "sshpass";
       args = {"-p" + password, type.name_, "-p", host.second, usr + host.first};
     } else if (type.id_ == exe) {
-      std::ifstream is(arg1);
+      /*std::ifstream is(arg1);
       std::string interpreter;
       getline(is, interpreter);
       interpreter.substr(2);
@@ -150,36 +174,40 @@ void grp_cmd(const type& type,
         file_contents += line;
       }
 
-      args = {"-p", host.second, usr + host.first, interpreter};
+      args = {"-p", host.second, usr + host.first, interpreter};*/
     } else if (type.id_ == scp) {
       args = {"-P", host.second, arg1, usr + host.first + arg2};
     } else {  // it's an rsync
       args = {"-e", "ssh -p " + host.second, arg1, usr + host.first + arg2};
     }
 
-    proc proc(host.first, cmd, args, file_contents);
+    proc proc(host.first, cmd, args);
     procs.push_back(proc);
   }
 
-  for (const proc& proc : procs) {
-    Poco::PipeInputStream out_stream(proc.out_pipe_);
-    std::string out;
-    for (int c = out_stream.get(); c != -1; c = out_stream.get()) {
-      out += static_cast<char>(c);
-    }
+  for (size_t i = 0; !procs.empty(); ++i) {
+      const int buf_size = 4096;
+      char buffer[buf_size];
+      const ssize_t r = read(procs[i].output_[0], buffer, buf_size);
+      if (r > 0) {
+        procs[i].out_.append(buffer, r);
+      }
 
-    Poco::PipeInputStream err_stream(proc.err_pipe_);
-    std::string err;
-    for (int c = err_stream.get(); c != -1; c = err_stream.get()) {
-      err += static_cast<char>(c);
-    }
+      if (errno != EAGAIN && errno != EINTR) {
+          int p, status;
+          do {
+            p = waitpid(procs[i].pid_, &status, 0);
+          } while (p == -1 && errno == EINTR);
 
-    const int es = proc.proc_hand_.wait();
-    const std::string color = es ? "\033[;31m" : "\033[;32m";
-    printf("%s%s | es=%d\033[m\n", color.c_str(), proc.host_.c_str(), es);
-    printf("%s", out.c_str());
-    fprintf(stderr, "%s", err.c_str());
-    printf("\n");
+          const int es = WEXITSTATUS(status);
+          const std::string color = es ? "\033[;31m" : "\033[;32m";
+          printf("%s%s | es=%d\033[m\n%s\n", color.c_str(), procs[i].host_.c_str(), es, procs[i].out_.c_str());
+          procs.erase(procs.begin() + i);
+          i = SIZE_MAX;
+      }
+      else if (i > procs.size()) {
+          i = SIZE_MAX;
+      }
   }
 }
 
